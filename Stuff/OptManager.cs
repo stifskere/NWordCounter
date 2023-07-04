@@ -2,34 +2,34 @@ namespace NwordCounter.Stuff;
 
 public static class OptManager
 {
-    private static List<ulong> _optedOutUsers = new();
+    private static readonly List<ulong> OptedOutUsers = new();
 
     static OptManager()
     {
         DatabaseResult res = Bot.Database.Exec("SELECT user FROM OptedOutUsers");
-        for (int i = 1; i < res.RowCount + 1; i++)
-            _optedOutUsers.Add((ulong)res.GetValue<long>("user", i));
+        for (int i = 1; i <= res.RowCount; i++)
+            OptedOutUsers.Add((ulong)res.GetValue<long>("user", i));
     }
 
     public static bool UserOptedOut(ulong user)
-        => _optedOutUsers.Contains(user);
+        => OptedOutUsers.Contains(user);
 
     public static bool OptInUser(ulong user)
     {
-        if (!_optedOutUsers.Contains(user))
+        if (!UserOptedOut(user))
             return false;
             
-        _optedOutUsers.Remove(user);
+        OptedOutUsers.Remove(user);
         Bot.Database.Exec("DELETE FROM OptedOutUsers WHERE user = @user", ("user", user));
         return true;
     }
 
     public static bool OptOutUser(ulong user, bool deleteData)
     {
-        if (_optedOutUsers.Contains(user))
+        if (UserOptedOut(user))
             return false;
             
-        _optedOutUsers.Add(user);
+        OptedOutUsers.Add(user);
         Bot.Database.Exec("INSERT INTO OptedOutUsers(user) VALUES(@user)", ("user", user));
 
         if (deleteData)

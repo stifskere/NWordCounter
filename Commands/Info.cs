@@ -13,6 +13,7 @@ public class Info : InteractionModuleBase<SocketInteractionContext>
 
         EmbedBuilder embed = new EmbedBuilder()
             .WithTitle("About this bot")
+            .WithThumbnailUrl(Bot.Client.CurrentUser.GetAvatarUrl())
             .WithDescription(
                 "This bot is all about counting how racist you are! Whenever you say the NWord this bot will count it and make a percentile.")
             .AddField("Don't worry", "This data is private unless you want to expose it ||or if you reach the top 5 most racist users||")

@@ -3,7 +3,7 @@ namespace NwordCounter.Stuff;
 
 public class FileVariables
 {
-    private Dictionary<string, string> _variables = new();
+    private readonly Dictionary<string, string> _variables = new();
 
     public FileVariables(string path)
     {

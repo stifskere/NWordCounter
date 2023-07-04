@@ -11,6 +11,18 @@ public class Global : InteractionModuleBase<SocketInteractionContext>
     [Group("top", "Global top stats group"), UsedImplicitly]
     public class Top : InteractionModuleBase<SocketInteractionContext>
     {
+        private struct Counts
+        {
+            public long Count;
+            public long NormalCount;
+            
+            public Counts(long count, long normalCount)
+            {
+                Count = count;
+                NormalCount = normalCount;
+            }
+        }
+        
         [SlashCommand("five", "Global top 5 most racist users."), UsedImplicitly]
         public async Task Top5Command()
         {
@@ -18,24 +30,24 @@ public class Global : InteractionModuleBase<SocketInteractionContext>
             
             DatabaseResult topFiveData = Bot.Database.Exec("SELECT user, guild, count, normalCount FROM UserNwords WHERE count != 0 AND normalCount != 0");
             
-            Dictionary<ulong, (long count, long normalCount)> counts = new();
+            Dictionary<ulong, Counts> counts = new();
 
             foreach (object[] objects in topFiveData)
             {
                 if (counts.ContainsKey((ulong)(long)objects[0]))
                 {
-                    (long count, long normalCount) valueTuple = counts[(ulong)(long)objects[0]];
-                    valueTuple.count += (long)objects[2];
-                    valueTuple.normalCount += (long)objects[3];
+                    Counts valueTuple = counts[(ulong)(long)objects[0]];
+                    valueTuple.Count += (long)objects[2];
+                    valueTuple.NormalCount += (long)objects[3];
                     counts[(ulong)(long)objects[0]] = valueTuple;
                     continue;
                 }
                 
-                counts.Add((ulong)(long)objects[0], ((long)objects[2], (long)objects[3]));
+                counts.Add((ulong)(long)objects[0], new Counts((long)objects[2], (long)objects[3]));
             }
 
-            List<KeyValuePair<ulong, (long count, long normalCount)>> orderedCounts = 
-                counts.OrderByDescending(v => v.Value.count)
+            List<KeyValuePair<ulong, Counts>> orderedCounts = 
+                counts.OrderByDescending(v => v.Value.Count)
                     .Take(5).ToList();
 
             EmbedBuilder top5Embed = new EmbedBuilder()
@@ -52,7 +64,7 @@ public class Global : InteractionModuleBase<SocketInteractionContext>
             for (int i = 0; i < (orderedCounts.Count >= 5 ? 5 : orderedCounts.Count); i++)
             {
                 IUser topUserData = await Bot.Client.GetUserAsync(orderedCounts[i].Key);
-                long normalCount = orderedCounts[i].Value.normalCount, count = orderedCounts[i].Value.count;
+                long normalCount = orderedCounts[i].Value.NormalCount, count = orderedCounts[i].Value.Count;
                 top5Embed.AddField($"Top {(i + 1).AddSuffix()}", $"**Username:** {topUserData.Username}\n**Count:** {count}\n**Percentile:** {Math.Round(100 * (count / (double)normalCount), 2)}%", true);
             }
 
@@ -76,14 +88,14 @@ public class Global : InteractionModuleBase<SocketInteractionContext>
                 return;
             }
             
-            (long count, long normalCount) userCounts = (0, 0);
+            Counts userCounts = new(0, 0);
             foreach (object[] row in Bot.Database.Exec("SELECT user, guild, count, normalCount FROM UserNwords WHERE user = @user", ("user", Context.User.Id)))
             {
-                userCounts.normalCount += (long)row[3];
-                userCounts.count += (long)row[2];
+                userCounts.NormalCount += (long)row[3];
+                userCounts.Count += (long)row[2];
             }
 
-            if (userCounts.count == 0 || userCounts.normalCount == 0)
+            if (userCounts.Count == 0 || userCounts.NormalCount == 0)
             {
                 EmbedBuilder errorEmbed = new EmbedBuilder()
                     .WithTitle("Unbelievable!")
@@ -96,7 +108,7 @@ public class Global : InteractionModuleBase<SocketInteractionContext>
             
             EmbedBuilder embed = new EmbedBuilder()
                 .WithTitle("Global NWord usage")
-                .WithDescription($"You used the NWord {userCounts.count} times, basically the {Math.Round(100 * (userCounts.count / (double)userCounts.normalCount), 2)}% of your global messages.")
+                .WithDescription($"You used the NWord {userCounts.Count} times, basically the {Math.Round(100 * (userCounts.Count / (double)userCounts.NormalCount), 2)}% of your global messages.")
                 .WithFooter(expose ? "You decided to expose the message you little imp!" : "This data is hidden for your privacy and safety :)")
                 .WithColor(Bot.DefaultEmbedColor);
 

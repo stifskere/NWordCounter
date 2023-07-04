@@ -18,7 +18,10 @@ public static class Bot
     public static async Task Main()
     {
         if (!Secrets.EntryExists("TOKEN"))
+        {
+            Console.WriteLine("Please set TOKEN in your .secrets file, read https://github.com/stifskere/NWordCounter/blob/main/README.MD for more info.");
             Environment.Exit(-1);
+        }
 
         Event.RegisterEvents(Client, Assembly.GetExecutingAssembly());
 
